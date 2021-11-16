@@ -117,22 +117,16 @@ class _FlashCardState extends State<FlashCard> {
                   ),
                 ],
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15.0)),
-                      height: 150,
-                      width: 400,
-                      child: AudioPlayerWithLocalAsset(
-                        fileName: widget.flashCards[listIndex].audioUrl,
-                      ),
-                    ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                  height: 70,
+                  width: 300,
+                  child: AudioPlayerWithLocalAsset(
+                    fileName: widget.flashCards[listIndex].audioUrl,
                   ),
-                ],
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),

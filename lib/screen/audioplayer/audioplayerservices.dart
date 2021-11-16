@@ -65,69 +65,18 @@ class _AudioPlayerWithLocalAssetState extends State<AudioPlayerWithLocalAsset> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
+        body:  Center(
           child: Container(
-            height: 200,
-            width: 400,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            alignment: Alignment.center,
-            child: Stack(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        IconButton(
-                            onPressed: () {
-                              playerState == PlayerState.PLAYING
-                                  ? audioPlayer.pause()
-                                  : cachePlayer.play(widget.fileName);
-                            },
-                            iconSize: 50,
-                            icon: Icon(playerState == PlayerState.PLAYING
-                                ? Icons.pause
-                                : Icons.play_arrow)),
-                      ],
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 30),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Slider(
-                            activeColor: Colors.orange,
-                            inactiveColor: Colors.grey[350],
-                            min: 0.0,
-                            max: (musicDuration.inMicroseconds /
-                                1000.floorToDouble()),
-                            value: (position.inMicroseconds / 1000)
-                                .floorToDouble(),
-                            onChanged: (value) {
-                              seekToSec(value.toInt());
-                            },
-                            onChangeEnd: (value) {
-                              seekToSec(0);
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: IconButton(
+                onPressed: () {
+                  playerState == PlayerState.PLAYING
+                      ? audioPlayer.pause()
+                      : cachePlayer.play(widget.fileName);
+                },
+                iconSize: 50,
+                icon: Icon(playerState == PlayerState.PLAYING
+                    ? Icons.pause
+                    : Icons.play_arrow)),
           ),
         ),
       ),
