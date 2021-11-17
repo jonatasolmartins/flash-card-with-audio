@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flash_card_with_audio/Server/sizeconfig.dart';
 import 'package:flutter/material.dart';
 
 class AudioPlayerWithLocalAsset extends StatefulWidget {
@@ -65,8 +66,9 @@ class _AudioPlayerWithLocalAssetState extends State<AudioPlayerWithLocalAsset> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body:  Center(
-          child: Container(
+        body: Center(
+          child: SizedBox(
+            height: SizeConfig.safeBlockVertical * 100,
             child: IconButton(
                 onPressed: () {
                   playerState == PlayerState.PLAYING
