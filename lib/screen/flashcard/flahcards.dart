@@ -1,8 +1,8 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flash_card_with_audio/Server/sizeconfig.dart';
 import 'package:flash_card_with_audio/screen/flashcard/flashcard_model.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class FlashCard extends StatefulWidget {
   final List<FlashCardModel> flashCards;
@@ -20,51 +20,94 @@ class FlashCard extends StatefulWidget {
   _FlashCardState createState() => _FlashCardState();
 }
 
+enum TtsState { playing, stopped }
+
 class _FlashCardState extends State<FlashCard> {
+  late FlutterTts flutterTts;
+
+  double volume = 0.5;
+  double pitch = 1.1;
+  double rate = 0.35;
   int listIndex = 0;
 
-  AudioCache cachePlayer = AudioCache();
-  AudioPlayer audioPlayer = AudioPlayer();
-  PlayerState playerState = PlayerState.PAUSED;
-  Duration musicDuration = const Duration();
-  Duration position = const Duration();
+  TtsState ttsState = TtsState.stopped;
+
+  get isPlaying => ttsState == TtsState.playing;
+
+  get isStopped => ttsState == TtsState.stopped;
 
   @override
-  void initState() {
+  initState() {
     super.initState();
-    cachePlayer = AudioCache(fixedPlayer: audioPlayer, prefix: 'asset/audio/');
-
-    audioPlayer.onDurationChanged.listen((Duration d) {
-      setState(() => musicDuration = d);
-    });
-
-    audioPlayer.onAudioPositionChanged
-        .listen((Duration p) => {setState(() => position = p)});
-
-    audioPlayer.onPlayerStateChanged
-        .listen((PlayerState s) => {setState(() => playerState = s)});
-
-    audioPlayer.onPlayerCompletion.listen((event) {
-      seekToSec(0);
-    });
-    audioPlayer.onPlayerError.listen((msg) {
-      setState(() {
-        playerState = PlayerState.STOPPED;
-        musicDuration = const Duration(seconds: 0);
-        position = const Duration(seconds: 0);
-      });
-    });
+    initTts();
   }
 
-  void seekToSec(int sec) {
-    Duration newPosition = Duration(seconds: sec);
-    audioPlayer.seek(newPosition);
+  initTts() {
+    flutterTts = FlutterTts();
+
+    flutterTts.setStartHandler(() {
+      setState(() {
+        ttsState = TtsState.playing;
+      });
+    });
+
+    flutterTts.setCompletionHandler(() {
+      setState(() {
+        ttsState = TtsState.stopped;
+      });
+    });
+
+    flutterTts.setErrorHandler((msg) {
+      setState(() {
+        ttsState = TtsState.stopped;
+      });
+    });
+
+    flutterTts.setLanguage('en-US');
+  }
+
+  Future _speak(String _newVoiceText) async {
+    await flutterTts.setVolume(volume);
+    await flutterTts.setSpeechRate(rate);
+    await flutterTts.setPitch(pitch);
+
+    if (_newVoiceText.isNotEmpty) {
+      var result = await flutterTts.speak(_newVoiceText);
+      if (result == 1) setState(() => ttsState = TtsState.playing);
+    }
+  }
+
+  Future _stop() async {
+    var result = await flutterTts.stop();
+    if (result == 1) setState(() => ttsState = TtsState.stopped);
+  }
+
+  Widget _buildSliders() {
+    return SizedBox(
+      child: Column(
+        children: [_rate()],
+      ),
+    );
+  }
+
+  Widget _rate() {
+    return Slider(
+      value: rate,
+      onChanged: (newRate) {
+        setState(() => rate = newRate);
+      },
+      min: 0.0,
+      max: 1.0,
+      divisions: 10,
+      label: "Rate: $rate",
+      activeColor: Colors.green,
+    );
   }
 
   @override
   void dispose() {
     super.dispose();
-    cachePlayer.clearAll();
+    flutterTts.stop();
   }
 
   @override
@@ -128,8 +171,8 @@ class _FlashCardState extends State<FlashCard> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
-                                        widget
-                                            .flashCards[listIndex].transCricao,
+                                        widget.flashCards[listIndex]
+                                            .transcription,
                                         style: TextStyle(
                                             fontSize:
                                                 SizeConfig.safeBlockHorizontal *
@@ -157,7 +200,7 @@ class _FlashCardState extends State<FlashCard> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   for (var item in widget
-                                      .flashCards[listIndex].translation)
+                                      .flashCards[listIndex].translationlist)
                                     Text(
                                       item,
                                       style: TextStyle(
@@ -174,49 +217,26 @@ class _FlashCardState extends State<FlashCard> {
                   ),
                 ],
               ),
-              Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white),
-                      child: Column(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              playerState == PlayerState.PLAYING
-                                  ? audioPlayer.pause()
-                                  : cachePlayer.play(
-                                      widget.flashCards[listIndex].audioUrl);
-                            },
-                            iconSize: SizeConfig.blockSizeVertical * 6,
-                            icon: playerState == PlayerState.PLAYING
-                                ? const Icon(Icons.pause)
-                                : const Icon(Icons.play_arrow),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 50),
-                            child: Slider(
-                              activeColor: Colors.orange,
-                              inactiveColor: Colors.grey[350],
-                              min: 0.0,
-                              max: (musicDuration.inMicroseconds /
-                                  1000.floorToDouble()),
-                              value: (position.inMicroseconds / 1000)
-                                  .floorToDouble(),
-                              onChanged: (value) {
-                                seekToSec(value.toInt());
-                              },
-                              onChangeEnd: (value) {
-                                seekToSec(0);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )),
+              SizedBox(
+                height: SizeConfig.safeBlockVertical * 5,
+              ),
+              Center(
+                child: Container(
+                  height: SizeConfig.safeBlockVertical * 10,
+                  width: SizeConfig.safeBlockHorizontal * 100,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white),
+                  child: Column(
+                    children: [
+                      _buildSliders(),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: SizeConfig.safeBlockVertical * 5,
+              ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: SizedBox(
@@ -253,6 +273,24 @@ class _FlashCardState extends State<FlashCard> {
                                         ? Colors.black
                                         : Colors.grey),
                               )),
+                          Padding(
+                            padding: const EdgeInsets.all(5.0),
+                            child: SizedBox(
+                              height: SizeConfig.safeBlockVertical * 8,
+                              child: IconButton(
+                                onPressed: () {
+                                  isPlaying
+                                      ? _stop()
+                                      : _speak(widget
+                                          .flashCards[listIndex].transcription);
+                                },
+                                iconSize: SizeConfig.blockSizeVertical * 6,
+                                icon: isPlaying
+                                    ? const Icon(Icons.pause)
+                                    : const Icon(Icons.play_arrow),
+                              ),
+                            ),
+                          ),
                           OutlinedButton.icon(
                               style: ButtonStyle(
                                 backgroundColor:

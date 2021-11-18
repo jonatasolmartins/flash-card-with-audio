@@ -1,14 +1,10 @@
 class FlashCardModel {
-  String transCricao;
-  List<String> translation;
-  String imgUrl;
-  String audioUrl;
-  String groupName;
+  String transcription;
+  String namegroup;
+  List<String> translationlist;
 
   FlashCardModel(
-      {required this.transCricao,
-      required this.translation,
-      required this.imgUrl,
-      required this.audioUrl,
-      required this.groupName});
+      {required this.transcription,
+      required this.namegroup,
+      required this.translationlist});
 }
