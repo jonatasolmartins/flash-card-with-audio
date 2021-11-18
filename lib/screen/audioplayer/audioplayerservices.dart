@@ -1,13 +1,12 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flash_card_with_audio/Server/sizeconfig.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 class AudioPlayerWithLocalAsset extends StatefulWidget {
-  final String fileName;
+  final PathCallback onPathSelected;
 
-  const AudioPlayerWithLocalAsset({Key? key, required this.fileName})
+  const AudioPlayerWithLocalAsset({required this.onPathSelected, Key? key})
       : super(key: key);
-
   @override
   _AudioPlayerWithLocalAssetState createState() =>
       _AudioPlayerWithLocalAssetState();
@@ -30,8 +29,6 @@ class _AudioPlayerWithLocalAssetState extends State<AudioPlayerWithLocalAsset> {
     super.initState();
 
     cachePlayer = AudioCache(fixedPlayer: audioPlayer, prefix: 'asset/audio/');
-
-    cachePlayer.load(widget.fileName);
 
     audioPlayer.onDurationChanged.listen((Duration d) {
       setState(() => musicDuration = d);
@@ -58,30 +55,13 @@ class _AudioPlayerWithLocalAssetState extends State<AudioPlayerWithLocalAsset> {
   @override
   void dispose() {
     super.dispose();
-
     cachePlayer.clearAll();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        body: Center(
-          child: SizedBox(
-            height: SizeConfig.safeBlockVertical * 100,
-            child: IconButton(
-                onPressed: () {
-                  playerState == PlayerState.PLAYING
-                      ? audioPlayer.pause()
-                      : cachePlayer.play(widget.fileName);
-                },
-                iconSize: 50,
-                icon: Icon(playerState == PlayerState.PLAYING
-                    ? Icons.pause
-                    : Icons.play_arrow)),
-          ),
-        ),
-      ),
-    );
+    return const Scaffold();
   }
 }
+
+typedef PathCallback = void Function(String path);

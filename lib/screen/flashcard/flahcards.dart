@@ -1,5 +1,5 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flash_card_with_audio/Server/sizeconfig.dart';
-import 'package:flash_card_with_audio/screen/audioplayer/audioplayerservices.dart';
 import 'package:flash_card_with_audio/screen/flashcard/flashcard_model.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +22,51 @@ class FlashCard extends StatefulWidget {
 
 class _FlashCardState extends State<FlashCard> {
   int listIndex = 0;
+
+  AudioCache cachePlayer = AudioCache();
+  AudioPlayer audioPlayer = AudioPlayer();
+  PlayerState playerState = PlayerState.PAUSED;
+  Duration musicDuration = const Duration();
+  Duration position = const Duration();
+
+  @override
+  void initState() {
+    super.initState();
+    cachePlayer = AudioCache(fixedPlayer: audioPlayer, prefix: 'asset/audio/');
+
+    audioPlayer.onDurationChanged.listen((Duration d) {
+      setState(() => musicDuration = d);
+    });
+
+    audioPlayer.onAudioPositionChanged
+        .listen((Duration p) => {setState(() => position = p)});
+
+    audioPlayer.onPlayerStateChanged
+        .listen((PlayerState s) => {setState(() => playerState = s)});
+
+    audioPlayer.onPlayerCompletion.listen((event) {
+      seekToSec(0);
+    });
+    audioPlayer.onPlayerError.listen((msg) {
+      setState(() {
+        playerState = PlayerState.STOPPED;
+        musicDuration = const Duration(seconds: 0);
+        position = const Duration(seconds: 0);
+      });
+    });
+  }
+
+  void seekToSec(int sec) {
+    Duration newPosition = Duration(seconds: sec);
+    audioPlayer.seek(newPosition);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    cachePlayer.clearAll();
+  }
+
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
@@ -130,30 +175,51 @@ class _FlashCardState extends State<FlashCard> {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  height: SizeConfig.safeBlockVertical * 10,
-                  width: SizeConfig.safeBlockVertical * 90,
-                  decoration: BoxDecoration(
-                      color: Colors.orange[200],
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
+                  padding: const EdgeInsets.all(8.0),
+                  child: Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white),
+                      child: Column(
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              playerState == PlayerState.PLAYING
+                                  ? audioPlayer.pause()
+                                  : cachePlayer.play(
+                                      widget.flashCards[listIndex].audioUrl);
+                            },
+                            iconSize: SizeConfig.blockSizeVertical * 6,
+                            icon: playerState == PlayerState.PLAYING
+                                ? const Icon(Icons.pause)
+                                : const Icon(Icons.play_arrow),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 50),
+                            child: Slider(
+                              activeColor: Colors.orange,
+                              inactiveColor: Colors.grey[350],
+                              min: 0.0,
+                              max: (musicDuration.inMicroseconds /
+                                  1000.floorToDouble()),
+                              value: (position.inMicroseconds / 1000)
+                                  .floorToDouble(),
+                              onChanged: (value) {
+                                seekToSec(value.toInt());
+                              },
+                              onChangeEnd: (value) {
+                                seekToSec(0);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  decoration:
-                      BoxDecoration(borderRadius: BorderRadius.circular(10)),
-                  height: SizeConfig.safeBlockVertical * 10,
-                  width: SizeConfig.safeBlockVertical * 90,
-                  child: AudioPlayerWithLocalAsset(
-                    fileName: widget.flashCards[listIndex].audioUrl,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
+                child: SizedBox(
                   height: SizeConfig.safeBlockVertical * 10,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
